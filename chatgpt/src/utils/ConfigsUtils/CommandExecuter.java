@@ -7,7 +7,9 @@ import services.OpenAIChatService;
 
 import java.util.Scanner;
 import utils.Formatter;
+
 import utils.fttComplements.Pretty;
+import utils.fttComplements.Ansi;
 
 public class CommandExecuter {
     // #region comex
@@ -65,10 +67,12 @@ public class CommandExecuter {
         commandSqrt = commandSqrt.substring(1);
 
         String input;
+        String confirmString;
 
         switch (commandSqrt) {
             case "new": // ? Reiniciar chat
-                System.out.print("\nIntroduzca \"NEW\" para confirmar: ");
+                confirmString = Pretty.getSpecialValueFormat("NEW");
+                System.out.printf("%nIntroduzca \"%s\" para confirmar: ", confirmString);
                 input = scanner.nextLine();
 
                 if (input.equals("NEW")) {
@@ -82,7 +86,9 @@ public class CommandExecuter {
             case "config": // ? Configurar parámetro
                 String cleanCommand = command.trim();
                 if (cleanCommand.length() <= 7) {
-                    Pretty.warn("Debe introducir un parámetro. Utilice \"/help\" para visualizarlos.");
+                    String helpString = Pretty.getSpecialValueFormat("/help");
+                    String msg = String.format("Debe introducir un parámetro. Utilice \"%s\" para visualizarlos.", helpString);
+                    Pretty.warn(msg);
                     break;
                 }
 
@@ -97,7 +103,8 @@ public class CommandExecuter {
                 break;
 
             case "clean": // ? Limpiar chat (con confirmación)
-                System.out.print("\nIntroduzca \"CLEAN\" para confirmar: ");
+                confirmString = Pretty.getSpecialValueFormat("CLEAN");
+                System.out.printf("%nIntroduzca \"%s\" para confirmar: ", confirmString);
                 input = scanner.nextLine();
 
                 input = input.trim();
@@ -150,26 +157,28 @@ public class CommandExecuter {
                 String msg;
 
                 if (MODELS.size() < 2) { // ? No hay más modelos disponibles
-                    msg = String.format("Solo hay un modelo disponible: %s.", MODELS.get(0));
+                    String modelString = MODELS.get(0);
+                    msg = String.format("Solo hay un modelo disponible: %s.", Pretty.getGreenBold(modelString));
                     Pretty.info(msg);
                     break;
                 }
 
-                System.out.println();
+                String currentModelString = Pretty.getGreenBold(currentModel);
+                msg = String.format("Modelo actual: %s", currentModelString);
+                Pretty.info(msg);
 
                 // Obtener modelo del usuario
                 String model = getModel();
                 svc.setModel(model);
                 currentModel = model;
 
-                msg = String.format("Modelo seleccionado: %s", model);
+                String modelString = Pretty.getGreenBold(model);
+                msg = String.format("Modelo seleccionado: %s", modelString);
                 Pretty.info(msg);
 
                 break;
 
             case "role":
-                System.out.println();
-
                 // Obtener rol del usuario
                 String role = getRole();
 
@@ -245,7 +254,8 @@ public class CommandExecuter {
         int option = 0;
 
         while (true) {
-            System.out.printf("Introduzca el modelo deseado (%d para cancelar): ", min);
+            String cancelString = Pretty.getSpecialValueFormat(min);
+            System.out.printf("Introduzca el modelo deseado (%s para cancelar): ", cancelString);
             input = scanner.nextLine();
 
             if (input.isBlank()) {
@@ -278,10 +288,14 @@ public class CommandExecuter {
         String role = "";
         String currentRole = svc.getRole();
 
-        System.out.printf("Rol actual: '%s'%n", currentRole);
+        String msg;
+        String currentRoleString = Ansi.CYAN + currentRole + Ansi.RESET;
+        msg = String.format("Rol actual: '%s'", currentRoleString);
+        Pretty.info(msg);
 
         while (true) {
-            System.out.print("Introduzca el nuevo rol (introduzca \"CANCEL\" para cancelar): ");
+            String cancelString = Pretty.getSpecialValueFormat("CANCEL");
+            System.out.printf("Introduzca el nuevo rol (introduzca \"%s\" para cancelar): ", cancelString);
             role = scanner.nextLine();
 
             if (role.isBlank()) {
@@ -294,7 +308,7 @@ public class CommandExecuter {
                 return role;
             }
 
-            String msg = String.format("La descripción del rol es demasiado larga (longitud máxima permitida: %d caracteres). Por favor, vuelva a intentarlo:", MAX_ROLE_LEN);
+            msg = String.format("La descripción del rol es demasiado larga (longitud máxima permitida: %d caracteres). Por favor, vuelva a intentarlo:", MAX_ROLE_LEN);
             Pretty.warn(msg);
         }
     }
@@ -313,11 +327,15 @@ public class CommandExecuter {
 
         // * Mostrar información
         System.out.printf("La temperatura controla la precisión (%.1f) y variedad (%.1f).%n", MIN_TEMP, MAX_TEMP);
-        System.out.printf("Temperatura actual: %.1f.%n%n", currentTemp);
+        
+        double tempTemperature = Math.round(currentTemp * 10.0) / 10.0;
+        String tempString = Pretty.getGreenBold(tempTemperature);
+        System.out.printf("Temperatura actual: %s.%n%n", tempString);
 
         // * Bucle
         while (true) {
-            System.out.print("Introduzca la nueva temperatura (Introduzca -1 para cancelar): ");
+            String cancelString = Pretty.getSpecialValueFormat(-1);
+            System.out.printf("Introduzca la nueva temperatura (Introduzca %s para cancelar): ", cancelString);
             input = scanner.nextLine();
 
             if (input.isBlank()) {

@@ -64,4 +64,30 @@ public class Pretty {
     }
 
     // #endregion
+
+    // * getGreenBold
+    public static String getGreenBold(String input) {
+        return BOLD + BRIGHT_GREEN + input + RESET;
+    }
+
+    public static String getGreenBold(int input) {
+        return getGreenBold("" + input);
+    }
+
+    public static String getGreenBold(double input) {
+        return getGreenBold("" + input);
+    }
+
+    // * getSpecialValueFormat
+    public static String getSpecialValueFormat(String input) {
+        return BOLD + MAGENTA + input + RESET;
+    }
+
+    public static String getSpecialValueFormat(int input) {
+        return getSpecialValueFormat("" + input);
+    }
+
+    public static String getSpecialValueFormat(double input) {
+        return getSpecialValueFormat("" + input);
+    }
 }
