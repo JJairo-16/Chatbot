@@ -80,6 +80,12 @@ public class CommandExecuter {
                 break;
 
             case "config": // ? Configurar parámetro
+                String cleanCommand = command.trim();
+                if (cleanCommand.length() <= 7) {
+                    Pretty.warn("Debe introducir un parámetro. Utilice \"/help\" para visualizarlos.");
+                    break;
+                }
+
                 String param = command.substring(commandSqrt.length() + 2).trim(); // ? Parámetro a configurar
                 config(param);
                 break;
