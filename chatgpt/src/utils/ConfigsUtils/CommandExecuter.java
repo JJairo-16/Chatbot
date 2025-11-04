@@ -1,5 +1,12 @@
 package utils.ConfigsUtils;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 
@@ -30,9 +37,9 @@ public class CommandExecuter {
 
     // #region Reglas
     // * Configs
-    private static final List<String> CONFIGS = List.of("model", "role", "temperature");
     private static final Map<String, String> ALIAS_MAP = Map.of(
-            "temp", "temperature");
+            "temp", "temperature",
+            "his", "history");
 
     // * Modelos
     private String currentModel;
@@ -44,6 +51,7 @@ public class CommandExecuter {
 
     // * Rol
     private static final int MAX_ROLE_LEN = 250;
+
     public static int getRoleMaxLen() {
         return MAX_ROLE_LEN;
     }
@@ -59,12 +67,24 @@ public class CommandExecuter {
     // #endregion
 
     /**
+     * Traducir alias.
+     */
+    private String getAlias(String alias) {
+        if (ALIAS_MAP.containsKey(alias)) { // ? Devolver valor real
+            return ALIAS_MAP.get(alias);
+        }
+
+        return alias;
+    }
+
+    /**
      * Procesar comando (redirigir responsabilidad).
      */
     public void processCommand(String command) {
         // Parsear comando
         String commandSqrt = command.split("\s+")[0];
         commandSqrt = commandSqrt.substring(1);
+        commandSqrt = getAlias(commandSqrt);
 
         String input;
         String confirmString;
@@ -79,7 +99,7 @@ public class CommandExecuter {
                     System.out.println();
                     break;
                 }
-                
+
                 resetChat();
                 break;
 
@@ -87,7 +107,8 @@ public class CommandExecuter {
                 String cleanCommand = command.trim();
                 if (cleanCommand.length() <= 7) {
                     String helpString = Pretty.getSpecialValueFormat("/help");
-                    String msg = String.format("Debe introducir un parámetro. Utilice \"%s\" para visualizarlos.", helpString);
+                    String msg = String.format("Debe introducir un parámetro. Utilice \"%s\" para visualizarlos.",
+                            helpString);
                     Pretty.warn(msg);
                     break;
                 }
@@ -116,6 +137,23 @@ public class CommandExecuter {
                 ftt.cleanConsole();
                 break;
 
+            case "history": // ? Guardar historial
+                System.out.println();
+
+                String dir = getDir();
+
+                if (dir.equalsIgnoreCase("cancel")) {
+                    Pretty.info("Se ha cancelado la operación.");
+                    break;
+                }
+
+                try {
+                    saveHistoryToFile(dir, "history.txt");
+                } catch (Exception e) {
+                    Pretty.warn("Ha ocurrido un error desconocido.");
+                }
+                break;
+
             default: // ? Comando no detectado
                 Pretty.warn("El comando introducido no se encuentra disponible o no existe.");
                 break;
@@ -131,21 +169,6 @@ public class CommandExecuter {
     // #endregion
 
     // #region config
-    /**
-     * Traducir alias del parámetro (/config).
-     */
-    private String getAlias(String alias) {
-        if (CONFIGS.contains(alias)) { // ? No es un alias
-            return alias;
-        }
-
-        if (ALIAS_MAP.containsKey(alias)) { // ? Devolver valor real
-            return ALIAS_MAP.get(alias);
-        }
-
-        return alias;
-    }
-
     /**
      * Configurar parámetro.
      */
@@ -270,7 +293,9 @@ public class CommandExecuter {
                     return option;
                 }
 
-                String msg = String.format("La opción elegida está fuera del rango permitido (%d-%d). Por favor, vuelva a intentarlo:", min, max);
+                String msg = String.format(
+                        "La opción elegida está fuera del rango permitido (%d-%d). Por favor, vuelva a intentarlo:",
+                        min, max);
                 Pretty.warn(msg);
 
             } catch (NumberFormatException e) {
@@ -308,7 +333,9 @@ public class CommandExecuter {
                 return role;
             }
 
-            msg = String.format("La descripción del rol es demasiado larga (longitud máxima permitida: %d caracteres). Por favor, vuelva a intentarlo:", MAX_ROLE_LEN);
+            msg = String.format(
+                    "La descripción del rol es demasiado larga (longitud máxima permitida: %d caracteres). Por favor, vuelva a intentarlo:",
+                    MAX_ROLE_LEN);
             Pretty.warn(msg);
         }
     }
@@ -327,7 +354,7 @@ public class CommandExecuter {
 
         // * Mostrar información
         System.out.printf("La temperatura controla la precisión (%.1f) y variedad (%.1f).%n", MIN_TEMP, MAX_TEMP);
-        
+
         double tempTemperature = Math.round(currentTemp * 10.0) / 10.0;
         String tempString = Pretty.getGreenBold(tempTemperature);
         System.out.printf("Temperatura actual: %s.%n%n", tempString);
@@ -349,13 +376,15 @@ public class CommandExecuter {
 
                 if (temp == -1) {
                     return -1;
-                
+
                 } else if (temp >= MIN_TEMP && temp <= MAX_TEMP) {
                     temp = Math.round(temp * 10.0) / 10.0;
                     return temp;
                 }
 
-                String msg = String.format("La temperatura introducida está fuera del rango permitido (%.1f - %.1f). Por favor, vuelva a intentarlo:", MIN_TEMP, MAX_TEMP);
+                String msg = String.format(
+                        "La temperatura introducida está fuera del rango permitido (%.1f - %.1f). Por favor, vuelva a intentarlo:",
+                        MIN_TEMP, MAX_TEMP);
                 Pretty.warn(msg);
 
             } catch (NumberFormatException e) {
@@ -368,6 +397,104 @@ public class CommandExecuter {
     }
 
     // #endregion
+
+    // #endregion
+
+    // #region History
+    private void saveHistoryToFile(String dirString, String fileName) throws IOException {
+        Path dir = Paths.get(dirString);
+        Path file = dir.resolve(fileName);
+
+        List<OpenAIChatService.Message> history = svc.getHistory();
+
+        try (BufferedWriter w = Files.newBufferedWriter(
+                file,
+                StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE_NEW)) {
+
+            for (OpenAIChatService.Message m : history) {
+                // Cabecera del mensaje
+                w.write("[" + m.role + "]"); // roles: system/user/assistant
+                w.newLine();
+
+                // Contenido, con sangría para líneas subsiguientes
+                String content = m.content == null ? "" : m.content;
+                content = content.replace("\r", "");
+                String[] lines = content.split("\n", -1);
+                for (int i = 0; i < lines.length; i++) {
+                    if (i == 0) {
+                        w.write(lines[i]);
+                    } else {
+                        w.write("    " + lines[i]);
+                    }
+                    w.newLine();
+                }
+
+                // Línea en blanco entre mensajes
+                w.newLine();
+            }
+
+            Pretty.info("Historial guardado en: " + file.toAbsolutePath());
+
+        } catch (IOException e) {
+            Pretty.warn("No se pudo guardar el historial: " + e.getMessage());
+        }
+    }
+
+    private String getDir() {
+        // * Declaración de variables
+        String input;
+
+        String cancelString = Pretty.getSpecialValueFormat("cancel");
+
+        do {
+            System.out.printf("Introduzca la ruta del directorio donde guardar el historial (\"%s\" para cancelar): ",
+                    cancelString);
+            input = scanner.nextLine();
+
+            if (input.isBlank()) {
+                Pretty.warn("La ruta no puede estar vacía. Por favor, vuelva a intentarlo:");
+                continue;
+            }
+
+            input = input.trim();
+            if (input.equalsIgnoreCase("cancel")) {
+                return input;
+            }
+
+            int code = validatePath(input, "history.txt");
+            if (code > 0) {
+                String msg = VALIDATION_PATH_MSG_MAP.get(code);
+                Pretty.warn(msg);
+            } else {
+                return input;
+            }
+
+        } while (true);
+    }
+
+    private static final Map<Integer, String> VALIDATION_PATH_MSG_MAP = Map.of(
+            1, "El directorio introducido no existe.",
+            2, "El archivo 'history.txt' ya existe en este directorio.");
+
+    private int validatePath(String dirString, String name) {
+        Path dir = Paths.get(dirString);
+
+        // Verificar que dir existe y es un directorio
+        if (!Files.isDirectory(dir)) {
+            return 1;
+        }
+
+        // Construir la ruta completa del archivo
+        Path filePath = dir.resolve(name);
+
+        // Validar que el archivo NO exista
+        if (Files.exists(filePath)) {
+            return 2;
+        }
+
+        return 0;
+    }
 
     // #endregion
 
@@ -401,6 +528,14 @@ public class CommandExecuter {
 
         System.out.println("/clean");
         System.out.println(tab + "Limpia la conversación del chat (sin reiniciar el contexto de la IA).");
+        System.out.println();
+
+        System.out.println("/history (his)");
+        System.out.println(tab + "Guarda el historial completo del chat actual.");
+        System.out.println();
+
+        System.out.println("/exit");
+        System.out.println(tab + "Cierra el programa de forma segura.");
         System.out.println();
 
         System.out.println("===============================================");
