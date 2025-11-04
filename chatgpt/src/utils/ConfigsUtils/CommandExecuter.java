@@ -5,8 +5,9 @@ import java.util.Map;
 
 import services.OpenAIChatService;
 
-import utils.Formatter;
 import java.util.Scanner;
+import utils.Formatter;
+import utils.fttComplements.Pretty;
 
 public class CommandExecuter {
     // #region comex
@@ -63,8 +64,18 @@ public class CommandExecuter {
         String commandSqrt = command.split("\s+")[0];
         commandSqrt = commandSqrt.substring(1);
 
+        String input;
+
         switch (commandSqrt) {
             case "new": // ? Reiniciar chat
+                System.out.print("\nIntroduzca \"NEW\" para confirmar: ");
+                input = scanner.nextLine();
+
+                if (input.equals("NEW")) {
+                    System.out.println();
+                    break;
+                }
+                
                 resetChat();
                 break;
 
@@ -74,23 +85,26 @@ public class CommandExecuter {
                 break;
 
             case "help": // ? Obtener texto de ayuda
+                System.out.println();
                 showHelp();
                 System.out.println();
                 break;
 
             case "clean": // ? Limpiar chat (con confirmación)
-                System.out.print("Introduzca \"CLEAN\" para confirmar: ");
-                String input = scanner.nextLine();
+                System.out.print("\nIntroduzca \"CLEAN\" para confirmar: ");
+                input = scanner.nextLine();
 
                 input = input.trim();
-                if (input.equals("CLEAN")) {
-                    ftt.cleanConsole();
+                if (!input.equals("CLEAN")) {
+                    System.out.println();
+                    break;
                 }
 
+                ftt.cleanConsole();
                 break;
 
             default: // ? Comando no detectado
-                System.out.println("El comando introducido no se encuentra disponible o no existe.\n");
+                Pretty.warn("El comando introducido no se encuentra disponible o no existe.");
                 break;
         }
     }
@@ -127,47 +141,54 @@ public class CommandExecuter {
 
         switch (param) {
             case "model":
+                String msg;
+
                 if (MODELS.size() < 2) { // ? No hay más modelos disponibles
-                    System.out.printf("Solo hay un modelo disponible: %s.%n%n", MODELS.get(0));
+                    msg = String.format("Solo hay un modelo disponible: %s.", MODELS.get(0));
+                    Pretty.info(msg);
                     break;
                 }
+
+                System.out.println();
 
                 // Obtener modelo del usuario
                 String model = getModel();
                 svc.setModel(model);
                 currentModel = model;
 
-                System.out.printf("%nModelo seleccionado: %s.%n", model);
+                msg = String.format("Modelo seleccionado: %s", model);
+                Pretty.info(msg);
 
-                System.out.println();
                 break;
 
             case "role":
+                System.out.println();
+
                 // Obtener rol del usuario
                 String role = getRole();
 
                 if (role.equals("CANCEL")) {
-                    System.out.println("\nEl rol no ha sido actualizado.");
+                    Pretty.info("El rol no ha sido actualizado.");
                 } else {
                     svc.setSystemRole(role);
-                    System.out.println("\nEl rol ha sido actualizado correctamente.");
+                    Pretty.info("El rol ha sido actualizado correctamente.");
                 }
 
-                System.out.println();
                 break;
 
             case "temperature":
+                System.out.println();
+
                 // Obtener temperatura del usuario
                 double temp = getTemperature();
 
                 if (temp == -1) { // ? Cancelar
-                    System.out.println("\nLa temperatura no ha sido actualizada.");
+                    Pretty.info("La temperatura no ha sido actualizada.");
                 } else {
                     svc.setTemperature(temp);
-                    System.out.println("\nLa temperatura ha sido actualizada correctamente.");
+                    Pretty.info("La temperatura ha sido actualizada correctamente.");
                 }
 
-                System.out.println();
                 break;
         }
     }
@@ -222,7 +243,7 @@ public class CommandExecuter {
             input = scanner.nextLine();
 
             if (input.isBlank()) {
-                System.out.println("\nDebe seleccionar un modelo. Por favor, vuelva a intentarlo:");
+                Pretty.warn("Debe seleccionar un modelo. Por favor, vuelva a intentarlo:");
                 continue;
             }
 
@@ -233,14 +254,13 @@ public class CommandExecuter {
                     return option;
                 }
 
-                System.out.printf(
-                        "%nLa opción elegida está fuera del rango permitido (%d-%d). Por favor, vuelva a intentarlo:%n",
-                        min, max);
+                String msg = String.format("La opción elegida está fuera del rango permitido (%d-%d). Por favor, vuelva a intentarlo:", min, max);
+                Pretty.warn(msg);
 
             } catch (NumberFormatException e) {
-                System.out.println("\nLa opción a elegir debe ser un número válido. Por favor, vuelva a intentarlo:");
+                Pretty.warn("La opción a elegir debe ser un número válido. Por favor, vuelva a intentarlo:");
             } catch (Exception e) {
-                System.out.println("\nAlgo ha salido mal. Por favor, vuelva a intentarlo:");
+                Pretty.warn("Algo ha salido mal. Por favor, vuelva a intentarlo:");
             }
         }
     }
@@ -259,7 +279,7 @@ public class CommandExecuter {
             role = scanner.nextLine();
 
             if (role.isBlank()) {
-                System.out.println("\nEl nuevo rol no puede estar vacío. Por favor, vuelva a intentarlo:");
+                Pretty.warn("El nuevo rol no puede estar vacío. Por favor, vuelva a intentarlo:");
                 continue;
             }
 
@@ -268,9 +288,8 @@ public class CommandExecuter {
                 return role;
             }
 
-            System.out.printf(
-                    "%nLa descripción del rol es demasiado larga (longitud máxima permitida: %d caracteres). Por favor, vuelva a intentarlo:%n",
-                    MAX_ROLE_LEN);
+            String msg = String.format("La descripción del rol es demasiado larga (longitud máxima permitida: %d caracteres). Por favor, vuelva a intentarlo:", MAX_ROLE_LEN);
+            Pretty.warn(msg);
         }
     }
 
@@ -296,7 +315,7 @@ public class CommandExecuter {
             input = scanner.nextLine();
 
             if (input.isBlank()) {
-                System.out.println("\nLa temperatura no puede estar en blanco. Por favor, vuelva a intentarlo:");
+                Pretty.warn("La temperatura no puede estar en blanco. Por favor, vuelva a intentarlo:");
                 continue;
             }
 
@@ -306,19 +325,20 @@ public class CommandExecuter {
 
                 if (temp == -1) {
                     return -1;
+                
                 } else if (temp >= MIN_TEMP && temp <= MAX_TEMP) {
                     temp = Math.round(temp * 10.0) / 10.0;
                     return temp;
                 }
 
-                System.out.printf(
-                        "%nLa temperatura introducida está fuera del rango permitido (%d-%d). Por favor, vuelva a intentarlo:%n",
-                        MIN_TEMP, MAX_TEMP);
+                String msg = String.format("La temperatura introducida está fuera del rango permitido (%.1f - %.1f). Por favor, vuelva a intentarlo:", MIN_TEMP, MAX_TEMP);
+                Pretty.warn(msg);
+
             } catch (NumberFormatException e) {
-                System.out.println(
-                        "\nEl formato de la temperatura introducida no es válido. Por favor, vuelva a intentarlo:");
+                Pretty.warn("El formato de la temperatura introducida no es válido. Por favor, vuelva a intentarlo:");
+
             } catch (Exception e) {
-                System.out.println("\nnAlgo ha salido mal. Por favor, vuelva a intentarlo:");
+                Pretty.warn("Algo ha salido mal. Por favor, vuelva a intentarlo:");
             }
         }
     }

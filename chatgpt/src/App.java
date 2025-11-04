@@ -3,6 +3,7 @@ import java.io.IOException;
 // * Consola
 import java.util.Scanner;
 import utils.Formatter;
+import utils.fttComplements.Pretty;
 
 // * Chat
 import utils.ConfigsUtils.CommandExecuter;
@@ -31,12 +32,16 @@ public class App {
         String answer;
         boolean running = true;
 
+        // * Ftt
+        Formatter ftt = new Formatter();
+        ftt.cleanConsole();
+
         // * Cargar configuración del usuario
         JSONObject userConfig;
         try {
             userConfig = ConfigLoader.initUser(USER_CONFIG_PATH);
         } catch (IOException e) {
-            System.out.println("Ha habido un error al cargar la configuración. Por favor, inténtelo más tarde.");
+            Pretty.error("Ha habido un error al cargar la configuración. Por favor, inténtelo más tarde.");
             return;
         }
 
@@ -50,7 +55,7 @@ public class App {
         try {
             svc  = OpenAIChatService.newSvc(apiKey);
         } catch (IllegalStateException e) {
-            System.out.println("La API proporcionada no es válida.");
+            Pretty.error("La API proporcionada no es válida.");
             return;
         }
         
@@ -60,10 +65,8 @@ public class App {
         UserLoader userLoader = new UserLoader(userConfig);
         userLoader.loadConfig();
 
-        // * Herramientas de consola
+        // * Crear scanner
         Scanner scanner = new Scanner(System.in);
-        Formatter ftt = new Formatter();
-        ftt.cleanConsole();
 
         while (running) {
             // * Obtener prompt
@@ -71,11 +74,9 @@ public class App {
             prompt = scanner.nextLine();
 
             if (prompt.isBlank()) {
-                System.out.println("El pompt no puede estar vacío.");
+                Pretty.warn("El pompt no puede estar vacío.");
                 continue;
             }
-
-            System.out.println();
 
             // * Gestionar prompt
             prompt = prompt.trim();
@@ -88,20 +89,20 @@ public class App {
             } else {
                 try {
                     answer = svc.chat(prompt);
-                    System.out.printf("ChatGPT:%n%s%n%n", answer);
+                    System.out.printf("%nChatGPT:%n%s%n%n", answer);
 
                 } catch (java.net.ConnectException e) {
-                    System.out.println("Ha ocurrido un error en la conexión. Por favor, inténtelo más tarde.\n");
+                    Pretty.warn("Ha ocurrido un error en la conexión. Por favor, inténtelo más tarde.");
 
                 } catch (java.io.IOException e) {
-                    System.out.println("Error de entrada/salida. Verifique su conexión o inténtelo nuevamente.\n");
+                    Pretty.warn("Error de entrada/salida. Verifique su conexión o inténtelo nuevamente.");
 
                 } catch (InterruptedException e) {
-                    System.out.println("La operación fue interrumpida. Por favor, inténtelo de nuevo.\n");
+                    Pretty.warn("La operación fue interrumpida. Por favor, inténtelo de nuevo.");
                     Thread.currentThread().interrupt(); // ? buena práctica: volver a marcar el hilo como interrumpido
 
                 } catch (Exception e) {
-                    System.out.println("Ha ocurrido un error desconocido.");
+                    Pretty.warn("Ha ocurrido un error desconocido.");
                 }
             }
         }

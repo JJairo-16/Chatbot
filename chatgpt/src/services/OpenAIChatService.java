@@ -104,7 +104,7 @@ public class OpenAIChatService {
             throw new IllegalStateException("Falta OPENAI_API_KEY.");
         }
 
-        if (!apiKey.startsWith("sdk-proj-")) {
+        if (!apiKey.startsWith("sk-proj-")) {
             throw new IllegalStateException("OPENAI_API_KEY no válida.");
         }
 
