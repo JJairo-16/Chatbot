@@ -47,6 +47,7 @@ public class App {
 
         // * Cargar api
         if (!UserLoader.apiKeyExists(userConfig)) {
+            Pretty.error("No se ha encontrado la API.");
             return;
         }
         String apiKey = userConfig.getString("apiKey");
