@@ -82,7 +82,7 @@ public class CommandExecuter {
      */
     public void processCommand(String command) {
         // Parsear comando
-        String commandSqrt = command.split("\s+")[0];
+        String commandSqrt = command.split("\\s+")[0];
         commandSqrt = commandSqrt.substring(1);
         commandSqrt = getAlias(commandSqrt);
 
@@ -93,14 +93,14 @@ public class CommandExecuter {
             case "new": // ? Reiniciar chat
                 confirmString = Pretty.getSpecialValueFormat("NEW");
                 System.out.printf("%nIntroduzca \"%s\" para confirmar: ", confirmString);
-                input = scanner.nextLine();
+                input = scanner.nextLine().trim();
 
                 if (input.equals("NEW")) {
-                    System.out.println();
+                    resetChat();
                     break;
                 }
 
-                resetChat();
+                System.out.println();
                 break;
 
             case "config": // ? Configurar parámetro
@@ -126,15 +126,14 @@ public class CommandExecuter {
             case "clean": // ? Limpiar chat (con confirmación)
                 confirmString = Pretty.getSpecialValueFormat("CLEAN");
                 System.out.printf("%nIntroduzca \"%s\" para confirmar: ", confirmString);
-                input = scanner.nextLine();
+                input = scanner.nextLine().trim();
 
-                input = input.trim();
-                if (!input.equals("CLEAN")) {
-                    System.out.println();
+                if (input.equals("CLEAN")) {
+                    ftt.cleanConsole();
                     break;
                 }
 
-                ftt.cleanConsole();
+                System.out.println();
                 break;
 
             case "history": // ? Guardar historial

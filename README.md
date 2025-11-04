@@ -55,6 +55,7 @@ Ejemplo:
 
 * **`/new`**  
   Reinicia la conversación con el modelo, borrando el historial del chat.
+  Antes de hacerlo, el programa solicitará confirmación escribiendo `NEW`.
 
 * **`/config <parámetro>`**  
   Permite modificar los parámetros principales del chat (modelo, rol o temperatura).  
@@ -63,6 +64,9 @@ Ejemplo:
 * **`/clean`**  
   Limpia la consola para mantener la interfaz despejada.  
   Antes de hacerlo, el programa solicitará confirmación escribiendo `CLEAN`.
+
+* **`/history`** *(alias: `his`)*  
+  Guarda el historial del chat en un archivo.
 
 * **`/exit`**  
   Cierra el programa y finaliza la sesión actual.
